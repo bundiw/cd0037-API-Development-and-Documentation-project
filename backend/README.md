@@ -33,7 +33,13 @@ createbd trivia
 Populate the database using the `trivia.psql` file provided. From the `backend` folder in terminal run:
 
 ```bash
-psql trivia < trivia.psql
+psql -U username trivia < trivia.psql
+
+For windows
+inside backend, run psql
+use cmd
+\i trivia.psql
+
 ```
 
 ### Run the Server
