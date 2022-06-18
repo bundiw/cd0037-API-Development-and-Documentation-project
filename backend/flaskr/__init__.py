@@ -4,6 +4,7 @@ import json
 from locale import currency
 from logging import error
 import os
+from tkinter import FALSE
 from unicodedata import category
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -13,6 +14,17 @@ import random
 from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
+
+
+def paginate_questions(request, selection):
+    page = request.args.get("page", 1, type=int)
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+
+    questions = [question.format() for question in selection]
+    current_questions = questions[start:end]
+
+    return current_questions
 
 
 def create_app(test_config=None):
@@ -55,17 +67,6 @@ def create_app(test_config=None):
             'success': True,
             'categories': all_category
         })
-
-    def paginate_questions(request, selection):
-        page = request.args.get("page", 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-        # print(type(selection))
-        # print(selection)
-        questions = [question.format() for question in selection]
-        current_questions = questions[start:end]
-
-        return current_questions
     """
     @TODO:
     Create an endpoint to handle GET requests for questions,
@@ -75,40 +76,41 @@ def create_app(test_config=None):
     """
     @app.route('/api/v1.0/questions')
     def retrieve_questions():
-
+        error = False
         try:
+            all_category = {}
             questions = [question for question in Question.query.all()]
             current_questions = paginate_questions(request, questions)
 
-            categories = [category
-                          for category in Category.query.all()]
+            if not current_questions:
+                error = True
+            else:
+                categories = [category
+                              for category in Category.query.all()]
 
-            all_category = {
-                str(category.id): category.type for category in categories}
-
-            '''
-            "question": "Heres a new question string",
-            "answer": "Heres a new answer string",
-            "difficulty": 1,
-            "category": 3
-            
-            '''
+                all_category = {
+                    str(category.id): category.type for category in categories}
 
         except:
-            abort(404)
+
+            error = True
 
         finally:
-            return jsonify({
-                'success': True,
-                'questions': current_questions,
-                'totalQuestions': len(questions),
-                'categories': all_category,
-                'currentCategory': None
-            })
+            if error:
+                abort(404)
+            else:
+                return jsonify({
+                    'success': True,
+                    'questions': current_questions,
+                    'totalQuestions': len(questions),
+                    'categories': all_category,
+                    'currentCategory': None
+                })
 
     @app.route('/api/v1.0/questions', methods=['POST'])
     def create_question():
         error = False
+        err = False
         try:
             res_question = request.get_json()
 
@@ -118,12 +120,17 @@ def create_app(test_config=None):
             # res_question['difficulty'])
             # destructure the dictionary as constituent variables + val
             if res_question:
-                question = Question(**res_question)
-                question.insert()
+                try:
+                    question = Question(**res_question)
+                    question.insert()
+                except:
+                    err = True
+                    error = False
 
             else:
 
                 error = True
+                err = False
 
         except:
             error = True
@@ -131,6 +138,8 @@ def create_app(test_config=None):
         finally:
             if error:
                 abort(400)
+            elif err:
+                abort(422)
             else:
 
                 return jsonify({
@@ -154,16 +163,21 @@ def create_app(test_config=None):
     """
     @app.route('/api/v1.0/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
-        question = Question.query.get(question_id)
-        if question:
-
+        error = False
+        try:
+            question = Question.query.get(question_id)
             question.delete()
-            return jsonify({
-                "deleted": question.format(),
-                "success": True
-            }), 200
-        else:
-            abort(410)
+        except:
+            error = True
+
+        finally:
+            if error:
+                abort(410)
+            else:
+                return jsonify({
+                    "deleted": question.format(),
+                    "success": True
+                }), 200
 
     """
     @TODO:
@@ -247,35 +261,32 @@ def create_app(test_config=None):
     """
     @app.route('/api/v1.0/categories/<int:category>/questions')
     def retrieve_question_by_Category(category):
-        questions_by_category = Question.query.filter_by(
-            category=category).all()
-        current_category = Category.query.get(category).type
+        error = False
+        try:
+            current_category = Category.query.get(category).type
+        except:
+            error = True
+        finally:
+            if error:
+                abort(404)
+            else:
+                questions_by_category = Question.query.filter_by(
+                    category=category).all()
 
-        if questions_by_category:
+                if questions_by_category:
 
-            questions = [question for question in questions_by_category]
-            questions = paginate_questions(request, questions)
+                    questions = [
+                        question for question in questions_by_category]
+                    questions = paginate_questions(request, questions)
+                    return jsonify({
+                        "questions": questions,
+                        "totalQuestions": len(questions),
+                        "currentCategory": current_category,
+                        "success": True
 
-            #   "questions": [
-            #     {
-            #       "id": 1,
-            #       "question": "This is a question",
-            #       "answer": "This is an answer",
-            #       "difficulty": 5,
-            #       "category": 4
-            #     }
-            #   ],
-            #   "totalQuestions": 100,
-            #   "currentCategory": "History"
-            # }
-            return jsonify({
-                "questions": questions,
-                "totalQuestions": len(questions),
-                "currentCategory": current_category,
-
-            }), 200
-        else:
-            abort(410)
+                    }), 200
+                else:
+                    abort(410)
 
     """
     @TODO:
@@ -296,7 +307,7 @@ def create_app(test_config=None):
     """
     @app.errorhandler(400)
     def error_400(error):
-        print(error)
+
         return jsonify({
             'success': False,
             'message': error.description,
@@ -306,8 +317,8 @@ def create_app(test_config=None):
 
     @app.errorhandler(410)
     def error_410(error):
-        print(error)
-        print(dir(error))
+
+        # print(dir(error))
         return jsonify({
             'success': False,
             'message': error.description,
@@ -327,7 +338,7 @@ def create_app(test_config=None):
 
     @app.errorhandler(405)
     def error_405(error):
-        print(error)
+
         return jsonify({
             'success': False,
             'message': error.name,
@@ -347,7 +358,7 @@ def create_app(test_config=None):
 
     @app.errorhandler(500)
     def error_500(error):
-        print(error)
+
         return jsonify({
             'success': False,
             'message': error.name,

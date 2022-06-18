@@ -1,7 +1,11 @@
 import os
 from sqlalchemy import Column, String, Integer, create_engine
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 database_name = os.getenv('DBNAME')
 username = os.getenv('UNAME')
@@ -11,6 +15,7 @@ host = os.getenv('HOST')
 database_path = "postgresql://{}:{}@{}/{}".format(
     username, password, host, database_name
 )
+
 
 db = SQLAlchemy()
 
