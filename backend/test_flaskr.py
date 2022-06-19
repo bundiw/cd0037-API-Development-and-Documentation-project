@@ -50,7 +50,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data["questions"]))
         self.assertTrue(len(data["categories"]))
 
-    def test_404_get_paginated_questions(self):
+    def test_not_found_get_paginated_questions(self):
         res = self.client().get('/api/v1.0/questions?page=100')
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 404)
@@ -90,7 +90,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertTrue(data['categories'])
 
-    def test_404_get_categories(self):
+    def test_not_found_get_categories(self):
         res = self.client().get('/api/v1.0/categories/8')
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 404)
@@ -104,7 +104,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertTrue(data['currentCategory'])
 
-    def test_410_get_questions_by_categories(self):
+    def test_not_found_get_questions_by_categories(self):
         res = self.client().get('/api/v1.0/categories/8/questions')
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 404)
@@ -129,7 +129,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['message'])
 
     def test_success_delete_question(self):
-        res = self.client().delete("/api/v1.0/questions/18")
+        res = self.client().delete("/api/v1.0/questions/19")
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data['deleted'])
