@@ -33,12 +33,12 @@ def create_app(test_config=None):
     setup_db(app)
 
     """
-    @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    @DONE: Set up CORS. Allow '*' for origins. Delete the sample route after completing the DONEs
     """
     CORS(app)
 
     """
-    @TODO: Use the after_request decorator to set Access-Control-Allow
+    @DONE: Use the after_request decorator to set Access-Control-Allow
     """
     @app.after_request
     def after_request(response):
@@ -51,7 +51,7 @@ def create_app(test_config=None):
         return response
 
     """
-    @TODO:
+    @DONE:
     Create an endpoint to handle GET requests
     for all available categories.
     """
@@ -68,11 +68,17 @@ def create_app(test_config=None):
             'categories': all_category
         })
     """
-    @TODO:
+    @DONE:
     Create an endpoint to handle GET requests for questions,
     including pagination (every 10 questions).
     This endpoint should return a list of questions,
     number of total questions, current category, categories.
+    """
+    """
+    TEST: At this point, when you start the application
+    you should see questions and categories generated,
+    ten questions per page and pagination at the bottom of the screen for three pages.
+    Clicking on the page numbers should update the questions.
     """
     @app.route('/api/v1.0/questions')
     def retrieve_questions():
@@ -107,6 +113,16 @@ def create_app(test_config=None):
                     'currentCategory': None
                 })
 
+    """
+    @DONE:
+    Create an endpoint to POST a new question,
+    which will require the question and answer text,
+    category, and difficulty score.
+
+    TEST: When you submit a question on the "Add" tab,
+    the form will clear and the question will appear at the end of the last page
+    of the questions list in the "List" tab.
+    """
     @app.route('/api/v1.0/questions', methods=['POST'])
     def create_question():
         error = False
@@ -118,7 +134,7 @@ def create_app(test_config=None):
 
             # question = Question(res_question['question'], res_question['answer'], res_question['category'],
             # res_question['difficulty'])
-            # destructure the dictionary as constituent variables + val
+            # destructure the dictionary as constituent variables
             if res_question:
                 try:
                     question = Question(**res_question)
@@ -148,14 +164,7 @@ def create_app(test_config=None):
                 })
 
     """
-    TEST: At this point, when you start the application
-    you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions.
-    """
-
-    """
-    @TODO:
+    @DONE:
     Create an endpoint to DELETE question using a question ID.
 
     TEST: When you click the trash icon next to a question, the question will be removed.
@@ -180,18 +189,7 @@ def create_app(test_config=None):
                 }), 200
 
     """
-    @TODO:
-    Create an endpoint to POST a new question,
-    which will require the question and answer text,
-    category, and difficulty score.
-
-    TEST: When you submit a question on the "Add" tab,
-    the form will clear and the question will appear at the end of the last page
-    of the questions list in the "List" tab.
-    """
-
-    """
-    @TODO:
+    @DONE:
     Create a POST endpoint to get questions based on a search term.
     It should return any questions for whom the search term
     is a substring of the question.
@@ -221,38 +219,8 @@ def create_app(test_config=None):
         else:
             abort(404)
 
-    @app.route('/api/v1.0/quizzes', methods=['POST'])
-    def play_quizzes():
-
-        # search_term = request.form.get('searchTerm', "")
-        quiz_data = request.get_json()
-        # print(quiz_data)
-        currency_category = quiz_data['quiz_category']['id']
-        # print(not currency_category.isdigit())
-        if not currency_category.isdigit():
-            abort(500)
-        # {'previous_questions': [], 'quiz_category': {'type': 'History', 'id': '4'}}
-        previous_questions = quiz_data['previous_questions']
-
-        question = None
-        questions = Question.query.filter_by(category=currency_category).all()
-        for quis in questions:
-            if quis.id in previous_questions:
-                pass
-            else:
-                question = quis.format()
-                break
-
-        # print(question)
-
-        if question:
-
-            return question, 200
-        else:
-            abort(404)
-
     """
-    @TODO:
+    @DONE:
     Create a GET endpoint to get questions based on category.
 
     TEST: In the "List" tab / main screen, clicking on one of the
@@ -289,7 +257,7 @@ def create_app(test_config=None):
                     abort(410)
 
     """
-    @TODO:
+    @DONE:
     Create a POST endpoint to get questions to play the quiz.
     This endpoint should take category and previous question parameters
     and return a random questions within the given category,
@@ -299,9 +267,42 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     """
+    @app.route('/api/v1.0/quizzes', methods=['POST'])
+    def play_quizzes():
+
+        # search_term = request.form.get('searchTerm', "")
+        quiz_data = request.get_json()
+        print(quiz_data['quiz_category']['id'])
+
+        currency_category = quiz_data['quiz_category']['id']
+        # print(not currency_category.isdigit())
+        question = None
+
+        previous_questions = quiz_data['previous_questions']
+        if quiz_data['quiz_category']['id']:
+
+            questions = Question.query.filter_by(
+                category=currency_category).all()
+
+        else:
+
+            questions = Question.query.all()
+
+        for quis in questions:
+            if quis.id in previous_questions:
+                pass
+            else:
+                question = quis.format()
+                break
+
+        if question:
+
+            return jsonify({"question": question}), 200
+        else:
+            abort(404)
 
     """
-    @TODO:
+    @DONE:
     Create error handlers for all expected errors
     including 404 and 422.
     """
